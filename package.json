@@ -1,0 +1,17 @@
+{
+  "name": "smartbarber-ethiopia",
+  "version": "1.0.0",
+  "description": "Commercial Barbershop Management & POS System for Ethiopia",
+  "main": "server/src/index.js",
+  "scripts": {
+    "start": "node server/src/index.js",
+    "server": "node server/src/index.js",
+    "client:dev": "npm run dev --prefix client",
+    "client:build": "npm run build --prefix client",
+    "build": "npm run client:build",
+    "dev": "node -e \"const { spawn } = require('child_process'); spawn('npm', ['run', 'dev', '--prefix', 'client'], { stdio: 'inherit', shell: true }); spawn('node', ['server/src/index.js'], { stdio: 'inherit', shell: true });\""
+  },
+  "keywords": ["barbershop", "pos", "ethiopia", "telebirr", "cbe-birr", "commission"],
+  "author": "SmartBarber ET",
+  "license": "ISC"
+}
