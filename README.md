@@ -31,15 +31,14 @@ A commercial-grade, turn-key software system built specifically to address the b
 ## 🚀 Quick Start (Running the System)
 
 ### Option 1: 1-Click Windows Launcher
-Double-click `run.bat` in this folder:
-```
-C:\Users\henok.birhanu\SmartBarber\run.bat
+Double-click `run.bat` in the project root directory:
+```powershell
+.\run.bat
 ```
 This automatically launches the server and opens `http://localhost:5000` in your default browser.
 
 ### Option 2: Command Line
 ```powershell
-# In C:\Users\henok.birhanu\SmartBarber
 npm start
 ```
 Open **[http://localhost:5000](http://localhost:5000)** in your browser or tablet.
@@ -68,21 +67,11 @@ npm run dev
 
 ---
 
-## 💼 Sales & Commercialization Strategy (How to Sell It)
+## 💼 Commercialization & Inquiries
 
-### 1. Pricing Packages
-* **Starter Plan (Single Shop, 1-3 Chairs):**
-  * **500 - 800 ETB / month** (POS, Commission tracking, Telegram daily report).
-* **Business Plan (Busy Neighborhood Hub, 4-8 Chairs):**
-  * **1,200 - 1,800 ETB / month** (Adds Live Queueing, Customer Telegram bot access, multi-barber performance).
-* **Hardware + Software Bundle (Highest Margin):**
-  * Pre-packaged 8-inch Android tablet + Bluetooth 58mm thermal printer + 1 Year SmartBarber subscription for **18,000 - 25,000 ETB**.
+For custom deployments, commercial licensing, hardware bundles (POS tablets & thermal receipt printers), or partnership inquiries, please communicate directly with the developers:
 
-### 2. High-Converting Pitch Script (Amharic & English)
-* **Amharic:**
-  > *"ሰላም ጋሽ [የባለቤቱ ስም]፣ በቀን መጨረሻ ከባርበሮች ጋር በሂሳብ እና በቴሌብር ምክንያት አለመግባባት ይፈጠራል? 'ይህ በቴሌብር ነው የተከፈለው፤ ይህ በእጅ ነው የተከፈለው' የሚል ክርክር አለ? ስማርት ባርበር እያንዳንዱን ፀጉር ቁረጥ መዝግቦ፣ በቴሌብር የገባውንና በእጅ የተቀበሉትን ለይቶ፣ ማታ 3 ሰዓት ላይ ለየትኛው ባርበር ስንት መክፈል እንዳለብዎት በቴሌግራም ሪፖርት ያደርግልዎታል።"*
-* **English:**
-  > *"Every evening, barbershop owners waste 45 minutes arguing over commission splits, cash in hand, and Telebirr SMS confirmations. SmartBarber automates this completely. Barbers get their fair share, you keep 100% of your shop profit, and your weekend queues run smoothly via Telegram."*
+- **Contact Developers:** Reach out directly or open an inquiry/issue in this repository.
 
 ---
 
