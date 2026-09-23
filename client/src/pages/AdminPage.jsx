@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Building2, TrendingUp, DollarSign, ShieldCheck, Lock, Unlock,
-  Send, Copy, Check, QrCode, Settings, FileText, AlertCircle,
+  Building2, TrendingUp, DollarSign, ShieldCheck, ShieldAlert, Lock, Unlock,
+  Send, Copy, Check, QrCode, Settings, FileText, AlertCircle, AlertTriangle,
   Plus, Edit3, Trash2, Scissors, UserCheck, Calendar, User, Phone, KeyRound,
-  Upload, Image, MapPin, Store, Sparkles, CheckCircle2, RefreshCw
+  Upload, Image, MapPin, Store, Sparkles, CheckCircle2, RefreshCw, Laptop, Wrench
 } from 'lucide-react';
 import { translations } from '../locales/i18n';
 import { authFetch } from '../utils/auth';
@@ -507,6 +507,15 @@ export default function AdminPage({ lang }) {
           >
             <Building2 size={13} />
             <span>{t.tabBranding || (lang === 'am' ? 'የሱቅ መረጃና ብራንዲንግ' : 'Shop Profile & Branding')}</span>
+          </button>
+          <button
+            onClick={() => setAdminTab('license')}
+            className={`px-3 py-1.5 rounded-xl font-bold transition cursor-pointer flex items-center gap-1.5 ${
+              adminTab === 'license' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <ShieldCheck size={13} />
+            <span>{lang === 'am' ? 'የሲስተም ፈቃድ (License)' : 'Subscription & License'}</span>
           </button>
         </div>
       </div>
@@ -1344,6 +1353,14 @@ export default function AdminPage({ lang }) {
         </div>
       )}
 
+      {/* SUB-TAB 6: SUBSCRIPTION & WORKSTATION LICENSING */}
+      {adminTab === 'license' && (
+        <SubscriptionAdminTab 
+          lang={lang} 
+          onUpdate={loadAllData} 
+        />
+      )}
+
 
 
       {/* BARBER ADD / EDIT MODAL */}
@@ -1575,6 +1592,350 @@ export default function AdminPage({ lang }) {
         lang={lang}
         onSuccess={loadAllData}
       />
+    </div>
+  );
+}
+
+// Subscription & Licensing Tab in Admin
+function SubscriptionAdminTab({ lang, onUpdate }) {
+  const t = translations[lang].subscription;
+  const [sub, setSub] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [keyInput, setKeyInput] = useState('');
+  const [activating, setActivating] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [copiedId, setCopiedId] = useState(false);
+
+  // Dev override
+  const [showDev, setShowDev] = useState(false);
+  const [devPin, setDevPin] = useState('');
+  const [devLoading, setDevLoading] = useState(false);
+  const [devError, setDevError] = useState('');
+
+  const fetchStatus = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/subscription/status');
+      const data = await res.json();
+      if (data.success) {
+        setSub(data.data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+  }, []);
+
+  const handleCopyId = () => {
+    if (sub?.machineId) {
+      navigator.clipboard.writeText(sub.machineId);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    }
+  };
+
+  const handleActivate = async (e) => {
+    e.preventDefault();
+    if (!keyInput.trim()) return;
+    setActivating(true);
+    setMessage('');
+    setError('');
+    try {
+      const res = await fetch('/api/subscription/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ licenseKey: keyInput.trim() })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage(data.message || t.successMsg);
+        setKeyInput('');
+        fetchStatus();
+        window.dispatchEvent(new Event('subscription-change'));
+        if (onUpdate) onUpdate();
+      } else {
+        setError(data.error || 'Activation failed');
+      }
+    } catch (err) {
+      setError('Network error connecting to backend.');
+    } finally {
+      setActivating(false);
+    }
+  };
+
+  const handleDevExtend = async (months) => {
+    if (!devPin) {
+      setDevError('Enter Developer Master PIN');
+      return;
+    }
+    setDevLoading(true);
+    setDevError('');
+    try {
+      const res = await fetch('/api/subscription/admin-override', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ masterPin: devPin, months })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage(data.message);
+        setDevPin('');
+        fetchStatus();
+        window.dispatchEvent(new Event('subscription-change'));
+        if (onUpdate) onUpdate();
+      } else {
+        setDevError(data.error || 'Invalid Developer Master PIN');
+      }
+    } catch (err) {
+      setDevError('Network error');
+    } finally {
+      setDevLoading(false);
+    }
+  };
+
+  const isExpired = sub?.isExpired;
+  const isExpiringSoon = sub?.isExpiringSoon;
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Header Banner */}
+      <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-inner ${
+            isExpired 
+              ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' 
+              : isExpiringSoon 
+                ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' 
+                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+          }`}>
+            {isExpired ? <ShieldAlert size={28} /> : <ShieldCheck size={28} />}
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+              {t.title}
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {isExpired ? t.expiredWarningTitle : (sub?.plan || 'Commercial Subscription')}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={fetchStatus}
+            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition"
+          >
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            <span>{lang === 'am' ? 'አድስ' : 'Refresh'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        {/* Machine ID */}
+        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Laptop size={13} className="text-amber-400" />
+              {t.machineId}
+            </span>
+            <button 
+              onClick={handleCopyId}
+              className="text-xs font-semibold text-amber-400 hover:text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/25 flex items-center gap-1"
+            >
+              {copiedId ? (
+                <>
+                  <Check size={12} className="text-emerald-400" />
+                  <span className="text-emerald-400">{t.idCopied}</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={12} />
+                  <span>{t.copyId}</span>
+                </>
+              )}
+            </button>
+          </div>
+          <div className="bg-slate-950 border border-slate-800/80 rounded-xl px-3 py-2.5 font-mono font-bold text-amber-300 text-base tracking-wide select-all text-center">
+            {sub?.machineId || 'LOADING...'}
+          </div>
+          <p className="text-[10px] text-slate-500 text-center">
+            {lang === 'am' ? 'ይህ ቁጥር ለዚህ ኮምፒዩተር ብቻ የተለየ ነው' : 'Unique hardware fingerprint for this workstation'}
+          </p>
+        </div>
+
+        {/* Days Left */}
+        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between">
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            {t.daysLeft}
+          </span>
+          <div className="my-2">
+            <span className={`text-4xl font-black ${
+              isExpired ? 'text-rose-400' : isExpiringSoon ? 'text-amber-400' : 'text-emerald-400'
+            }`}>
+              {sub?.daysRemaining ?? 0}
+            </span>
+            <span className="text-xs text-slate-400 ml-2 font-medium">
+              {lang === 'am' ? 'ቀናት ቀሩ' : 'days left'}
+            </span>
+          </div>
+          <span className={`text-[11px] font-semibold inline-flex items-center gap-1 ${
+            isExpired ? 'text-rose-400' : isExpiringSoon ? 'text-amber-400' : 'text-emerald-400'
+          }`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+            {isExpired ? t.statusExpired : isExpiringSoon ? t.statusExpiringSoon : t.statusActive}
+          </span>
+        </div>
+
+        {/* Expiry Date & Plan */}
+        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between">
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            {t.validUntil}
+          </span>
+          <div className="my-2">
+            <span className="text-lg font-bold text-white block">
+              {sub?.formattedExpiry || 'N/A'}
+            </span>
+            <span className="text-xs text-slate-400 block mt-0.5 truncate">
+              {sub?.plan}
+            </span>
+          </div>
+          <span className="text-[10px] text-slate-500">
+            {lang === 'am' ? 'የቀን ቆጠራው በራስሰር ይሰላል' : 'Calculated automatically on local machine'}
+          </span>
+        </div>
+
+      </div>
+
+      {/* Activation Section */}
+      <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4">
+        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+          <KeyRound size={16} className="text-amber-400" />
+          <span>{t.enterKey}</span>
+        </h3>
+
+        {message && (
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2">
+            <Sparkles size={16} className="text-emerald-400 shrink-0" />
+            <span>{message}</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-2">
+            <AlertTriangle size={16} className="text-rose-400 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleActivate} className="space-y-3">
+          <textarea
+            rows="3"
+            value={keyInput}
+            onChange={(e) => setKeyInput(e.target.value)}
+            placeholder={t.enterKeyPlaceholder}
+            className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-2xl p-3.5 text-xs text-amber-200 font-mono outline-none"
+          />
+
+          <button
+            type="submit"
+            disabled={activating}
+            className="py-3 px-6 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-2 transition disabled:opacity-50 cursor-pointer"
+          >
+            {activating ? (
+              <>
+                <RefreshCw size={14} className="animate-spin" />
+                <span>{t.activating}</span>
+              </>
+            ) : (
+              <>
+                <Sparkles size={14} />
+                <span>{t.activateBtn}</span>
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+
+      {/* Developer On-Site Override Strip */}
+      <div className="bg-slate-900/60 border border-slate-800/80 p-5 rounded-3xl space-y-3">
+        <button
+          type="button"
+          onClick={() => setShowDev(!showDev)}
+          className="w-full flex items-center justify-between text-xs text-slate-500 hover:text-slate-300 font-semibold"
+        >
+          <span className="flex items-center gap-1.5">
+            <Wrench size={13} />
+            {t.devPinTitle}
+          </span>
+          <span>{showDev ? '▲' : '▼'}</span>
+        </button>
+
+        {showDev && (
+          <div className="pt-2 space-y-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">
+                {t.devPinPrompt}
+              </label>
+              <input 
+                type="password"
+                maxLength={10}
+                value={devPin}
+                onChange={(e) => setDevPin(e.target.value)}
+                placeholder="Developer PIN"
+                className="w-full max-w-xs bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono outline-none focus:border-amber-500"
+              />
+            </div>
+
+            {devError && <p className="text-xs text-rose-400">{devError}</p>}
+
+            <div className="flex gap-2 flex-wrap pt-1">
+              <button 
+                type="button"
+                disabled={devLoading}
+                onClick={() => handleDevExtend(1)}
+                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-200"
+              >
+                {t.extend1M}
+              </button>
+              <button 
+                type="button"
+                disabled={devLoading}
+                onClick={() => handleDevExtend(3)}
+                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-200"
+              >
+                {t.extend3M}
+              </button>
+              <button 
+                type="button"
+                disabled={devLoading}
+                onClick={() => handleDevExtend(6)}
+                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-200"
+              >
+                {t.extend6M}
+              </button>
+              <button 
+                type="button"
+                disabled={devLoading}
+                onClick={() => handleDevExtend(12)}
+                className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs font-bold text-amber-300"
+              >
+                {t.extend1Y}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }

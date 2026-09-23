@@ -1,0 +1,260 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartBarber ET - Master License Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4 selection:bg-amber-500 selection:text-slate-950">
+
+  <div class="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-slate-800 pb-5">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl shadow-inner">
+          💈
+        </div>
+        <div>
+          <h1 class="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+            SmartBarber License Key
+          </h1>
+          <p class="text-xs text-slate-400">Official Offline Cryptographic Key Issuer</p>
+        </div>
+      </div>
+      <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+        Ed25519 Secured
+      </span>
+    </div>
+
+    <!-- Form Inputs -->
+    <div class="space-y-4">
+      
+      <!-- Workstation Machine ID -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+          Workstation Machine ID <span class="text-rose-400">*</span>
+        </label>
+        <input 
+          id="machineId"
+          type="text" 
+          placeholder="e.g. SB-WS-F1B9-E50D" 
+          class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-3 text-white font-mono text-sm placeholder:text-slate-600 outline-none transition uppercase"
+        />
+        <p class="text-[11px] text-slate-500 mt-1">Provided by the barbershop cashier or owner from their screen.</p>
+      </div>
+
+      <!-- Subscription Plan / Duration -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+          Subscription Duration <span class="text-rose-400">*</span>
+        </label>
+        <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
+          <button type="button" onclick="selectPlan(30, '1 Month Subscription')" class="plan-btn px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition text-center active:scale-95" data-days="30">
+            1 Month<br><span class="text-[10px] text-slate-500 font-normal">30 Days</span>
+          </button>
+          <button type="button" onclick="selectPlan(60, '2 Months Subscription')" class="plan-btn px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition text-center active:scale-95" data-days="60">
+            2 Months<br><span class="text-[10px] text-slate-500 font-normal">60 Days</span>
+          </button>
+          <button type="button" onclick="selectPlan(90, '3 Months Subscription')" class="plan-btn px-3 py-2.5 rounded-xl border border-amber-500 bg-amber-500/10 text-amber-300 text-xs font-semibold transition text-center active:scale-95" data-days="90">
+            3 Months<br><span class="text-[10px] text-amber-400 font-normal">90 Days</span>
+          </button>
+          <button type="button" onclick="selectPlan(180, '6 Months Subscription')" class="plan-btn px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition text-center active:scale-95" data-days="180">
+            6 Months<br><span class="text-[10px] text-slate-500 font-normal">180 Days</span>
+          </button>
+          <button type="button" onclick="selectPlan(365, '1 Year Full Subscription')" class="plan-btn px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition text-center active:scale-95" data-days="365">
+            1 Year<br><span class="text-[10px] text-slate-500 font-normal">365 Days</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Shop Name (Optional) -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+          Shop Name / Branch (Optional Note)
+        </label>
+        <input 
+          id="shopName"
+          type="text" 
+          placeholder="e.g. Bole Medhanialem Branch" 
+          class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-slate-600 outline-none transition"
+        />
+      </div>
+
+      <!-- Generate Action -->
+      <button 
+        onclick="generateKey()"
+        class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm tracking-wide shadow-lg shadow-amber-500/20 active:scale-[0.99] transition flex items-center justify-center gap-2"
+      >
+        <span>⚡ Generate Official License Key</span>
+      </button>
+
+    </div>
+
+    <!-- Output Section (Hidden by default) -->
+    <div id="outputSection" class="hidden space-y-4 pt-4 border-t border-slate-800">
+      
+      <!-- Generated Key Box -->
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-xs font-semibold text-amber-400 uppercase tracking-wider">
+            Official License Key:
+          </label>
+          <button onclick="copyKey()" id="copyKeyBtn" class="text-xs text-amber-300 hover:text-amber-200 font-semibold flex items-center gap-1">
+            📋 Copy Key
+          </button>
+        </div>
+        <textarea 
+          id="licenseKeyOutput"
+          readonly
+          rows="3"
+          class="w-full bg-slate-950 border border-amber-500/40 rounded-xl p-3 text-amber-300 font-mono text-xs select-all outline-none"
+        ></textarea>
+      </div>
+
+      <!-- Client Ready Message Box -->
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+            Message for Client (Telegram / SMS):
+          </label>
+          <button onclick="copyMessage()" id="copyMsgBtn" class="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1">
+            💬 Copy Message
+          </button>
+        </div>
+        <textarea 
+          id="clientMessageOutput"
+          readonly
+          rows="5"
+          class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-slate-300 font-mono text-xs select-all outline-none"
+        ></textarea>
+      </div>
+
+    </div>
+
+    <!-- Footer Security Notice -->
+    <div class="text-[11px] text-slate-500 text-center pt-2">
+      Protected with Asymmetric Ed25519 Cryptography. Keys generated here are uniquely tied to the specified Workstation ID.
+    </div>
+
+  </div>
+
+  <script>
+    // Private Key bytes (PKCS8 for Ed25519)
+    const PRIV_KEY_BASE64 = "MC4CAQAwBQYDK2VwBCIEIAlnhL4GsUw+H8aUEBKgA6Cu0UaQ7toDwMjLjdw1wMAJ";
+    
+    let selectedDays = 90;
+    let selectedPlanTitle = "3 Months Subscription";
+
+    function selectPlan(days, title) {
+      selectedDays = days;
+      selectedPlanTitle = title;
+      document.querySelectorAll('.plan-btn').forEach(btn => {
+        if (parseInt(btn.getAttribute('data-days')) === days) {
+          btn.className = 'plan-btn px-3 py-2.5 rounded-xl border border-amber-500 bg-amber-500/10 text-amber-300 text-xs font-semibold transition text-center active:scale-95';
+        } else {
+          btn.className = 'plan-btn px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition text-center active:scale-95';
+        }
+      });
+    }
+
+    function base64UrlEncode(bytes) {
+      let binary = '';
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    async function generateKey() {
+      const machineId = document.getElementById('machineId').value.trim().toUpperCase();
+      const shopName = document.getElementById('shopName').value.trim();
+
+      if (!machineId) {
+        alert('Please enter the Workstation Machine ID (e.g. SB-WS-XXXX-YYYY)');
+        return;
+      }
+
+      const payload = {
+        m: machineId,
+        d: selectedDays,
+        p: selectedPlanTitle,
+        s: shopName || 'SmartBarber Client',
+        i: Math.floor(Date.now() / 1000)
+      };
+
+      const payloadStr = JSON.stringify(payload);
+      const encoder = new TextEncoder();
+      const payloadBytes = encoder.encode(payloadStr);
+      const payloadBase64 = base64UrlEncode(payloadBytes);
+
+      try {
+        // Convert PKCS8 base64 to ArrayBuffer
+        const rawPriv = Uint8Array.from(atob(PRIV_KEY_BASE64), c => c.charCodeAt(0));
+        
+        // Import Ed25519 Private Key via Web Crypto
+        const cryptoKey = await window.crypto.subtle.importKey(
+          'pkcs8',
+          rawPriv.buffer,
+          { name: 'Ed25519' },
+          false,
+          ['sign']
+        );
+
+        // Sign payloadBase64
+        const dataToSign = encoder.encode(payloadBase64);
+        const signatureBuffer = await window.crypto.subtle.sign(
+          { name: 'Ed25519' },
+          cryptoKey,
+          dataToSign
+        );
+
+        const sigBytes = new Uint8Array(signatureBuffer);
+        const sigBase64 = base64UrlEncode(sigBytes);
+
+        const fullLicenseKey = `SBKEY-${payloadBase64}.${sigBase64}`;
+
+        document.getElementById('licenseKeyOutput').value = fullLicenseKey;
+
+        // Compose client message
+        const msg = `ሰላም! የ SmartBarber ማደሻ የፈቃድ ቁልፍዎ (License Key):\n` +
+          `📋 Workstation ID: ${machineId}\n` +
+          `📅 ቆይታ (Plan): ${selectedPlanTitle} (${selectedDays} ቀናት)\n\n` +
+          `የፈቃድ ቁልፍ (Copy this key):\n${fullLicenseKey}\n\n` +
+          `በሲስተሙ "Renew / Activate License" በሚለው ሳጥን ውስጥ ፔስት (Paste) አድርገው "Activate" ይበሉ።\nእናመሰግናለን!`;
+
+        document.getElementById('clientMessageOutput').value = msg;
+        document.getElementById('outputSection').classList.remove('hidden');
+
+      } catch (err) {
+        console.error(err);
+        alert('Cryptographic generation error: ' + err.message + '\nPlease use the node CLI generator: npm run license:generate -- --machine ' + machineId);
+      }
+    }
+
+    function copyKey() {
+      const el = document.getElementById('licenseKeyOutput');
+      navigator.clipboard.writeText(el.value);
+      const btn = document.getElementById('copyKeyBtn');
+      btn.innerHTML = '✅ Copied!';
+      setTimeout(() => btn.innerHTML = '📋 Copy Key', 2000);
+    }
+
+    function copyMessage() {
+      const el = document.getElementById('clientMessageOutput');
+      navigator.clipboard.writeText(el.value);
+      const btn = document.getElementById('copyMsgBtn');
+      btn.innerHTML = '✅ Copied Message!';
+      setTimeout(() => btn.innerHTML = '💬 Copy Message', 2000);
+    }
+  </script>
+
+</body>
+</html>

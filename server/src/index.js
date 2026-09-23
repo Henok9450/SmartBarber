@@ -10,7 +10,9 @@ const queueController = require('./controllers/queueController');
 const reportController = require('./controllers/reportController');
 const appointmentController = require('./controllers/appointmentController');
 const authController = require('./controllers/authController');
+const subscriptionController = require('./controllers/subscriptionController');
 const { authenticateUser, requireRole } = require('./middleware/rbac');
+const { checkSubscription } = require('./middleware/subscriptionMiddleware');
 const db = require('./database/db');
 
 const app = express();
@@ -22,6 +24,14 @@ app.use(morgan('dev'));
 
 // Global User Authentication extractor
 app.use(authenticateUser);
+
+// Subscription Endpoints (Accessible even if expired for renewal & status check)
+app.get('/api/subscription/status', subscriptionController.getStatus);
+app.post('/api/subscription/activate', subscriptionController.activateKey);
+app.post('/api/subscription/admin-override', subscriptionController.adminOverride);
+
+// Global Subscription Enforcement Guard for all operational API routes
+app.use(checkSubscription);
 
 // Authentication Endpoints
 app.post('/api/auth/login', authController.login);

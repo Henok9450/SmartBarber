@@ -21,6 +21,9 @@ yarn-error.log*
 .env.local
 .env.*.local
 *.local
+*.pem
+server/keys/
+keys/
 
 # Editor & OS files
 .vscode/

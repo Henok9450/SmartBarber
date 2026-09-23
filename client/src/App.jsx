@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Scissors, Users, User, BarChart3, Globe, 
-  Sparkles, ShieldCheck, Lock, Unlock, LogOut, ChevronDown, FileText,
-  Calendar, Clock
+  Sparkles, ShieldCheck, ShieldAlert, Lock, Unlock, LogOut, ChevronDown, FileText,
+  Calendar, Clock, KeyRound
 } from 'lucide-react';
 import POSPage from './pages/POSPage';
 import QueuePage from './pages/QueuePage';
@@ -10,6 +10,7 @@ import BarberPage from './pages/BarberPage';
 import AdminPage from './pages/AdminPage';
 import DailyReconciliationView from './components/DailyReconciliationView';
 import LoginModal from './components/LoginModal';
+import SubscriptionModal from './components/SubscriptionModal';
 import { getUser, clearSession } from './utils/auth';
 import { translations } from './locales/i18n';
 
@@ -18,6 +19,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('pos'); // 'pos', 'queue', 'barber', 'admin'
   const [lang, setLang] = useState('en'); // 'en' or 'am'
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [subscription, setSubscription] = useState(null);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [settings, setSettings] = useState({
     shop_name: 'SmartBarber',
@@ -43,10 +46,32 @@ export default function App() {
     }
   };
 
+  const loadSubscription = async () => {
+    try {
+      const res = await fetch('/api/subscription/status');
+      const data = await res.json();
+      if (data.success && data.data) {
+        setSubscription(data.data);
+        if (data.data.isExpired) {
+          setShowSubscriptionModal(true);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load subscription:', err);
+    }
+  };
+
   useEffect(() => {
     loadSettings();
+    loadSubscription();
     window.addEventListener('settings-change', loadSettings);
-    return () => window.removeEventListener('settings-change', loadSettings);
+    window.addEventListener('subscription-change', loadSubscription);
+    const subTimer = setInterval(loadSubscription, 60000);
+    return () => {
+      window.removeEventListener('settings-change', loadSettings);
+      window.removeEventListener('subscription-change', loadSubscription);
+      clearInterval(subTimer);
+    };
   }, []);
 
   const t = translations[lang];
@@ -129,8 +154,33 @@ export default function App() {
               </div>
             </div>
 
-            {/* Right: Operational Status Indicator */}
-            <div className="flex items-center gap-3 text-[11px] text-slate-400">
+            {/* Right: Operational Status & Subscription Indicator */}
+            <div className="flex items-center gap-2.5 sm:gap-3 text-[11px] text-slate-400 flex-wrap">
+              {/* Subscription Pill */}
+              <button 
+                type="button"
+                onClick={() => setShowSubscriptionModal(true)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-semibold text-xs transition cursor-pointer ${
+                  subscription?.isExpired
+                    ? 'bg-rose-500/15 border-rose-500/40 text-rose-300 hover:bg-rose-500/25 animate-pulse'
+                    : subscription?.isExpiringSoon
+                      ? 'bg-amber-500/15 border-amber-500/35 text-amber-300 hover:bg-amber-500/25'
+                      : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400 hover:bg-emerald-500/20'
+                }`}
+                title="View Subscription & License"
+              >
+                {subscription?.isExpired ? (
+                  <ShieldAlert size={13} className="text-rose-400" />
+                ) : (
+                  <ShieldCheck size={13} className={subscription?.isExpiringSoon ? 'text-amber-400' : 'text-emerald-400'} />
+                )}
+                <span>
+                  {subscription?.isExpired 
+                    ? (lang === 'am' ? '🔴 ፈቃዱ አልቋል' : '🔴 License Expired')
+                    : `${subscription?.daysRemaining ?? 0} ${lang === 'am' ? 'ቀናት ቀሩ' : 'days left'}`}
+                </span>
+              </button>
+
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span>{lang === 'am' ? 'ሲስተም ዝግጁ' : 'System Online'}</span>
@@ -361,6 +411,22 @@ export default function App() {
           setCurrentUser(user);
         }}
       />
+
+      {/* Subscription & Workstation License Modal */}
+      {(showSubscriptionModal || subscription?.isExpired) && (
+        <SubscriptionModal
+          lang={lang}
+          subscription={subscription}
+          isBlocking={subscription?.isExpired}
+          onClose={() => setShowSubscriptionModal(false)}
+          onActivated={(updated) => {
+            loadSubscription();
+            if (!updated?.isExpired) {
+              setShowSubscriptionModal(false);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -156,6 +156,22 @@ function initDatabase() {
     }
   }
 
+  // Initialize default subscription settings (7-Day initial setup grace period)
+  const checkSub = db.prepare("SELECT value FROM settings WHERE key = 'subscription_expiry'").get();
+  if (!checkSub) {
+    const insertSetting = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
+    const trialDays = 7;
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + trialDays);
+
+    insertSetting.run('subscription_status', 'active');
+    insertSetting.run('subscription_plan', 'Initial 7-Day Setup Trial');
+    insertSetting.run('subscription_expiry', expiryDate.toISOString());
+    insertSetting.run('subscription_activated_at', new Date().toISOString());
+    insertSetting.run('subscription_last_check', new Date().toISOString());
+    insertSetting.run('subscription_license_key', 'TRIAL-SETUP-KEY');
+  }
+
   // Base System Users (Only Owner and Cashier for initial administrative setup)
   const checkUsers = db.prepare('SELECT COUNT(*) as count FROM users').get();
   if (checkUsers.count === 0) {
