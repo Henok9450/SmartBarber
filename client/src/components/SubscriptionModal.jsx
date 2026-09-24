@@ -22,7 +22,6 @@ export default function SubscriptionModal({
 
   // Developer maintenance override state
   const [showDevSection, setShowDevSection] = useState(false);
-  const [devPin, setDevPin] = useState('');
   const [devLoading, setDevLoading] = useState(false);
   const [devError, setDevError] = useState('');
 
@@ -70,29 +69,53 @@ export default function SubscriptionModal({
     }
   };
 
-  const handleDevOverride = async (months, hours) => {
-    if (!devPin) {
-      setDevError('Please enter the Developer Master PIN.');
+  // Developer One-Time Challenge State (Zero hardcoded PINs)
+  const [challengeCode, setChallengeCode] = useState('');
+  const [copiedChallenge, setCopiedChallenge] = useState(false);
+  const [otpTokenInput, setOtpTokenInput] = useState('');
+
+  const fetchChallenge = async () => {
+    try {
+      const res = await fetch('/api/subscription/challenge');
+      const data = await res.json();
+      if (data.success && data.data) {
+        setChallengeCode(data.data.challenge);
+      }
+    } catch (err) {
+      console.error('Failed to load challenge:', err);
+    }
+  };
+
+  const copyChallenge = () => {
+    if (challengeCode) {
+      navigator.clipboard.writeText(challengeCode);
+      setCopiedChallenge(true);
+      setTimeout(() => setCopiedChallenge(false), 2000);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    if (e) e.preventDefault();
+    if (!otpTokenInput.trim()) {
+      setDevError('Please enter the signed One-Time Pass.');
       return;
     }
     setDevLoading(true);
     setDevError('');
     try {
-      const res = await fetch('/api/subscription/admin-override', {
+      const res = await fetch('/api/subscription/challenge/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ masterPin: devPin, months, hours })
+        body: JSON.stringify({ otpToken: otpTokenInput.trim() })
       });
       const data = await res.json();
       if (data.success) {
         setSuccessMsg(data.message);
-        setDevPin('');
-        try {
-          confetti({ particleCount: 50, spread: 50 });
-        } catch (_) {}
+        setOtpTokenInput('');
+        try { confetti({ particleCount: 60, spread: 60 }); } catch (_) {}
         if (onActivated) onActivated(data.data);
       } else {
-        setDevError(data.error || 'Invalid Developer Master PIN.');
+        setDevError(data.error || 'Failed to verify OTP.');
       }
     } catch (err) {
       setDevError('Network error connecting to server.');
@@ -283,78 +306,87 @@ export default function SubscriptionModal({
           <div className="border-t border-slate-800/80 pt-4">
             <button 
               type="button"
-              onClick={() => setShowDevSection(!showDevSection)}
+              onClick={() => {
+                const next = !showDevSection;
+                setShowDevSection(next);
+                if (next && !challengeCode) fetchChallenge();
+              }}
               className="w-full flex items-center justify-between text-xs text-slate-500 hover:text-slate-300 font-semibold py-1 transition"
             >
               <span className="flex items-center gap-1.5">
                 <Wrench size={13} className="text-slate-400" />
-                {t.devPinTitle}
+                <span>{lang === 'am' ? 'የዲቨሎፐር ፈጣን ማረጋገጫ (One-Time Dynamic Pass)' : 'Developer One-Time Dynamic Pass (OTP)'}</span>
               </span>
               <span>{showDevSection ? '▲' : '▼'}</span>
             </button>
 
             {showDevSection && (
-              <div className="mt-3 p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3 animate-fade-in">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">
-                    {t.devPinPrompt}
+              <div className="mt-3 p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3.5 animate-fade-in">
+                
+                {/* Challenge Display */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                  <div>
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      {lang === 'am' ? 'የማረጋገጫ ኮድ (Challenge)' : 'Workstation Challenge'}
+                    </span>
+                    <span className="font-mono font-bold text-amber-300 text-sm tracking-wider">
+                      {challengeCode || 'GENERATING...'}
+                    </span>
+                    <span className="text-[10px] text-slate-500 block">
+                      {lang === 'am' ? 'ለ10 ደቂቃ ብቻ የሚያገለግል' : 'Valid for 10 minutes (single-use)'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button 
+                      type="button"
+                      onClick={fetchChallenge}
+                      className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition"
+                      title="New Challenge"
+                    >
+                      <RefreshCw size={13} />
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={copyChallenge}
+                      className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-semibold flex items-center gap-1 transition"
+                    >
+                      {copiedChallenge ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                      <span>{copiedChallenge ? 'Copied' : 'Copy'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* OTP Pass Input */}
+                <form onSubmit={handleVerifyOtp} className="space-y-2">
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase">
+                    {lang === 'am' ? 'ከስልክዎ የተፈረመውን OTP እዚህ ያስገቡ:' : 'Enter Signed OTP Pass (from phone generator):'}
                   </label>
-                  <input 
-                    type="password"
-                    maxLength={10}
-                    value={devPin}
-                    onChange={(e) => setDevPin(e.target.value)}
-                    placeholder="Master PIN"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono outline-none focus:border-amber-500"
-                  />
-                </div>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text"
+                      value={otpTokenInput}
+                      onChange={(e) => setOtpTokenInput(e.target.value)}
+                      placeholder="OTP-eyJ..."
+                      className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono outline-none focus:border-amber-500"
+                    />
+                    <button 
+                      type="submit"
+                      disabled={devLoading}
+                      className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-50"
+                    >
+                      {devLoading ? <RefreshCw size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                      <span>{lang === 'am' ? 'ክፈት' : 'Unlock'}</span>
+                    </button>
+                  </div>
+                  {devError && <p className="text-xs text-rose-400">{devError}</p>}
+                </form>
 
-                {devError && (
-                  <p className="text-[11px] text-rose-400">{devError}</p>
-                )}
-
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
-                  <button 
-                    type="button"
-                    disabled={devLoading}
-                    onClick={() => handleDevOverride(0, 1)}
-                    className="px-2 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-[11px] font-bold text-rose-300 transition text-center"
-                  >
-                    ⏱️ +1 Hr (Test)
-                  </button>
-                  <button 
-                    type="button"
-                    disabled={devLoading}
-                    onClick={() => handleDevOverride(1)}
-                    className="px-2 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-slate-200 transition text-center"
-                  >
-                    {t.extend1M}
-                  </button>
-                  <button 
-                    type="button"
-                    disabled={devLoading}
-                    onClick={() => handleDevOverride(3)}
-                    className="px-2 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-slate-200 transition text-center"
-                  >
-                    {t.extend3M}
-                  </button>
-                  <button 
-                    type="button"
-                    disabled={devLoading}
-                    onClick={() => handleDevOverride(6)}
-                    className="px-2 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-slate-200 transition text-center"
-                  >
-                    {t.extend6M}
-                  </button>
-                  <button 
-                    type="button"
-                    disabled={devLoading}
-                    onClick={() => handleDevOverride(12)}
-                    className="px-2 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-[11px] font-bold text-amber-300 transition text-center"
-                  >
-                    {t.extend1Y}
-                  </button>
-                </div>
+                <p className="text-[10px] text-slate-500 text-center">
+                  {lang === 'am' 
+                    ? 'ምንም ዓይነት ቋሚ የይለፍ ቃል የለም። በዲቨሎፐሩ ስልክ ብቻ የሚፈረም ነጠላ አጠቃቀም ፈቃድ ነው።' 
+                    : 'Zero hardcoded passwords. Asymmetrically signed by Developer Private Key.'}
+                </p>
               </div>
             )}
           </div>

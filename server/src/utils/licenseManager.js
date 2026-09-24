@@ -6,8 +6,8 @@ const MASTER_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEA5aasmnNSBNpkeX6RXPt217sgrO89fMO/GC6srWNnYvc=
 -----END PUBLIC KEY-----`;
 
-// Master Developer Emergency PIN for direct workstation setup
-const DEVELOPER_MASTER_PIN = '987654';
+// Active One-Time Developer Challenges (in-memory, expire in 10 minutes, single use)
+const activeChallenges = new Map();
 
 function getSetting(db, key) {
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
@@ -266,13 +266,96 @@ function verifyAndApplyLicenseKey(db, rawKey) {
 }
 
 /**
- * On-site direct developer extension (protected by developer master PIN)
+ * Generates an ephemeral cryptographic challenge for on-site developer maintenance
  */
-function developerDirectExtend(db, masterPin, daysToAdd, planLabel, hoursToAdd) {
-  if (masterPin !== DEVELOPER_MASTER_PIN) {
-    throw new Error('Invalid Developer Master PIN.');
+function generateDeveloperChallenge(db) {
+  const machineId = getOrCreateMachineId(db);
+  const nonce = crypto.randomBytes(3).toString('hex').toUpperCase(); // 6 hex chars e.g. 59B8C6
+  const challenge = `CH-${nonce}`;
+  const expiresAt = Date.now() + (10 * 60 * 1000); // 10 minutes
+
+  activeChallenges.set(challenge, {
+    machineId,
+    expiresAt,
+    used: false
+  });
+
+  // Prune expired
+  for (const [k, v] of activeChallenges.entries()) {
+    if (v.expiresAt < Date.now()) activeChallenges.delete(k);
   }
 
+  return {
+    challenge,
+    machineId,
+    validMinutes: 10
+  };
+}
+
+/**
+ * Cryptographically verifies a signed developer One-Time Challenge response
+ * ZERO hardcoded passwords - signed exclusively by the developer's Private Key!
+ */
+function verifyAndExecuteDeveloperChallenge(db, challengeToken) {
+  if (!challengeToken || typeof challengeToken !== 'string') {
+    throw new Error('Please enter a valid Developer One-Time Pass.');
+  }
+
+  const clean = challengeToken.trim();
+  let tokenData = clean;
+  if (clean.startsWith('OTP-')) {
+    tokenData = clean.substring(4);
+  }
+
+  const [payloadB64, sigB64] = tokenData.split('.');
+  if (!payloadB64 || !sigB64) {
+    throw new Error('Invalid One-Time Pass format.');
+  }
+
+  // 1. Verify digital signature against MASTER_PUBLIC_KEY
+  try {
+    const pubKey = crypto.createPublicKey(MASTER_PUBLIC_KEY);
+    const isVerified = crypto.verify(null, Buffer.from(payloadB64), pubKey, Buffer.from(sigB64, 'base64url'));
+    if (!isVerified) {
+      throw new Error('Cryptographic signature failed. Forged or unauthorized developer pass.');
+    }
+  } catch (err) {
+    throw new Error('Cryptographic signature verification failed: ' + err.message);
+  }
+
+  // 2. Parse payload
+  let payload;
+  try {
+    payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+  } catch (err) {
+    throw new Error('Corrupted pass payload.');
+  }
+
+  // 3. Verify challenge nonce
+  const record = activeChallenges.get(payload.ch);
+  if (!record) {
+    throw new Error(`Challenge [${payload.ch}] does not exist or has expired. Please generate a new challenge.`);
+  }
+
+  if (record.used) {
+    throw new Error('This One-Time Pass has already been used. Please request a new challenge.');
+  }
+
+  if (record.expiresAt < Date.now()) {
+    activeChallenges.delete(payload.ch);
+    throw new Error('Challenge has expired (10-minute limit exceeded).');
+  }
+
+  const currentMachineId = getOrCreateMachineId(db);
+  if (payload.m !== '*' && payload.m !== currentMachineId) {
+    throw new Error(`This pass was signed for machine [${payload.m}], but this workstation is [${currentMachineId}].`);
+  }
+
+  // Invalidate challenge immediately (Single-use security)
+  record.used = true;
+  activeChallenges.delete(payload.ch);
+
+  // 4. Apply duration
   const now = new Date();
   const currentExpiryStr = getSetting(db, 'subscription_expiry');
   let baseDate = now;
@@ -285,22 +368,32 @@ function developerDirectExtend(db, masterPin, daysToAdd, planLabel, hoursToAdd) 
   }
 
   let ms = 0;
-  if (hoursToAdd) {
-    ms = hoursToAdd * 60 * 60 * 1000;
+  let addedText = '';
+  if (payload.h) {
+    ms = payload.h * 60 * 60 * 1000;
+    addedText = `${payload.h} Hour(s)`;
+  } else if (payload.mins) {
+    ms = payload.mins * 60 * 1000;
+    addedText = `${payload.mins} Minute(s)`;
+  } else if (payload.months) {
+    const d = payload.months * 30;
+    ms = d * 24 * 60 * 60 * 1000;
+    addedText = `${payload.months} Month(s)`;
   } else {
-    const days = parseInt(daysToAdd || 30, 10);
-    ms = days * 24 * 60 * 60 * 1000;
+    const d = parseInt(payload.d || 30, 10);
+    ms = d * 24 * 60 * 60 * 1000;
+    addedText = `${d} Day(s)`;
   }
 
   const newExpiry = new Date(baseDate.getTime() + ms);
-  const plan = planLabel || (hoursToAdd ? `Developer Override: ${hoursToAdd} Hours` : `Developer Direct: ${daysToAdd} Days`);
+  const plan = payload.p || `Developer Verified Unlock: ${addedText}`;
 
   setSetting(db, 'subscription_status', 'active');
   setSetting(db, 'subscription_plan', plan);
   setSetting(db, 'subscription_expiry', newExpiry.toISOString());
   setSetting(db, 'subscription_activated_at', now.toISOString());
   setSetting(db, 'subscription_last_check', now.toISOString());
-  setSetting(db, 'subscription_license_key', `ON-SITE-DEV-PIN-${now.getTime()}`);
+  setSetting(db, 'subscription_license_key', `DEV-OTP-${payload.ch}-${now.getTime()}`);
 
   const diffMs = newExpiry.getTime() - now.getTime();
   const formattedExpiry = diffMs < 48 * 60 * 60 * 1000
@@ -310,8 +403,7 @@ function developerDirectExtend(db, masterPin, daysToAdd, planLabel, hoursToAdd) 
   return {
     success: true,
     plan,
-    daysAdded: daysToAdd || 0,
-    hoursAdded: hoursToAdd || 0,
+    addedText,
     newExpiryDate: newExpiry.toISOString(),
     formattedExpiry
   };
@@ -319,10 +411,10 @@ function developerDirectExtend(db, masterPin, daysToAdd, planLabel, hoursToAdd) 
 
 module.exports = {
   MASTER_PUBLIC_KEY,
-  DEVELOPER_MASTER_PIN,
   getOrCreateMachineId,
   initSubscriptionSettings,
   getSubscriptionStatus,
   verifyAndApplyLicenseKey,
-  developerDirectExtend
+  generateDeveloperChallenge,
+  verifyAndExecuteDeveloperChallenge
 };

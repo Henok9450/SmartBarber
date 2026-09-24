@@ -28,21 +28,25 @@ const subscriptionController = {
     }
   },
 
-  adminOverride: (req, res) => {
+  getDeveloperChallenge: (req, res) => {
     try {
-      const { masterPin, months, days, hours, plan } = req.body;
-      let daysToAdd = days;
-      if (months) {
-        daysToAdd = months * 30;
-        if (months === 12) daysToAdd = 365;
-      }
-      if (!daysToAdd && !hours) daysToAdd = 30;
+      const challengeData = licenseManager.generateDeveloperChallenge(db);
+      res.json({ success: true, data: challengeData });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
 
-      const result = licenseManager.developerDirectExtend(db, masterPin, daysToAdd, plan, hours);
-      const addedDesc = hours ? `${hours} hour(s)` : `${result.daysAdded} day(s)`;
+  verifyDeveloperChallenge: (req, res) => {
+    try {
+      const { otpToken } = req.body;
+      if (!otpToken) {
+        return res.status(400).json({ success: false, error: 'Please enter the Developer One-Time Pass.' });
+      }
+      const result = licenseManager.verifyAndExecuteDeveloperChallenge(db, otpToken);
       res.json({
         success: true,
-        message: `Subscription extended by ${addedDesc}. Valid until ${result.formattedExpiry}.`,
+        message: `Workstation successfully unlocked by verified developer! Added ${result.addedText}. Valid until ${result.formattedExpiry}.`,
         data: result
       });
     } catch (err) {

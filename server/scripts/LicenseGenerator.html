@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -23,9 +23,9 @@
         </div>
         <div>
           <h1 class="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-            SmartBarber License Key
+            SmartBarber Issuer
           </h1>
-          <p class="text-xs text-slate-400">Official Offline Cryptographic Key Issuer</p>
+          <p class="text-xs text-slate-400">Offline Master Cryptographic Key Signer</p>
         </div>
       </div>
       <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
@@ -33,8 +33,28 @@
       </span>
     </div>
 
-    <!-- Form Inputs -->
-    <div class="space-y-4">
+    <!-- Navigation Tabs -->
+    <div class="grid grid-cols-2 p-1 bg-slate-950 border border-slate-800 rounded-2xl">
+      <button 
+        id="tabBtnCommercial"
+        type="button"
+        onclick="switchTab('commercial')" 
+        class="py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-amber-500 text-slate-950 shadow cursor-pointer"
+      >
+        <span>💳 Commercial License</span>
+      </button>
+      <button 
+        id="tabBtnOtp"
+        type="button"
+        onclick="switchTab('otp')" 
+        class="py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white cursor-pointer"
+      >
+        <span>🔐 Developer Dynamic OTP</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: Commercial License Generator -->
+    <div id="tabCommercial" class="space-y-4">
       
       <!-- Workstation Machine ID -->
       <div>
@@ -47,7 +67,7 @@
           placeholder="e.g. SB-WS-F1B9-E50D" 
           class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-3 text-white font-mono text-sm placeholder:text-slate-600 outline-none transition uppercase"
         />
-        <p class="text-[11px] text-slate-500 mt-1">Provided by the barbershop cashier or owner from their screen.</p>
+        <p class="text-[11px] text-slate-500 mt-1">Found on the client workstation screen.</p>
       </div>
 
       <!-- Subscription Plan / Duration -->
@@ -89,66 +109,171 @@
 
       <!-- Generate Action -->
       <button 
+        type="button"
         onclick="generateKey()"
-        class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm tracking-wide shadow-lg shadow-amber-500/20 active:scale-[0.99] transition flex items-center justify-center gap-2"
+        class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm tracking-wide shadow-lg shadow-amber-500/20 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer"
       >
-        <span>⚡ Generate Official License Key</span>
+        <span>⚡ Generate Commercial License Key</span>
       </button>
+
+      <!-- Output Section -->
+      <div id="outputSection" class="hidden space-y-4 pt-4 border-t border-slate-800">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-semibold text-amber-400 uppercase tracking-wider">
+              Official License Key:
+            </label>
+            <button type="button" onclick="copyKey()" id="copyKeyBtn" class="text-xs text-amber-300 hover:text-amber-200 font-semibold flex items-center gap-1 cursor-pointer">
+              📋 Copy Key
+            </button>
+          </div>
+          <textarea 
+            id="licenseKeyOutput"
+            readonly
+            rows="3"
+            class="w-full bg-slate-950 border border-amber-500/40 rounded-xl p-3 text-amber-300 font-mono text-xs select-all outline-none"
+          ></textarea>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              Message for Client (Telegram / SMS):
+            </label>
+            <button type="button" onclick="copyMessage()" id="copyMsgBtn" class="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 cursor-pointer">
+              💬 Copy Message
+            </button>
+          </div>
+          <textarea 
+            id="clientMessageOutput"
+            readonly
+            rows="5"
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-slate-300 font-mono text-xs select-all outline-none"
+          ></textarea>
+        </div>
+      </div>
 
     </div>
 
-    <!-- Output Section (Hidden by default) -->
-    <div id="outputSection" class="hidden space-y-4 pt-4 border-t border-slate-800">
+    <!-- TAB 2: Developer Dynamic Challenge OTP Signer -->
+    <div id="tabOtp" class="hidden space-y-4">
       
-      <!-- Generated Key Box -->
-      <div>
-        <div class="flex items-center justify-between mb-1.5">
-          <label class="text-xs font-semibold text-amber-400 uppercase tracking-wider">
-            Official License Key:
-          </label>
-          <button onclick="copyKey()" id="copyKeyBtn" class="text-xs text-amber-300 hover:text-amber-200 font-semibold flex items-center gap-1">
-            📋 Copy Key
-          </button>
-        </div>
-        <textarea 
-          id="licenseKeyOutput"
-          readonly
-          rows="3"
-          class="w-full bg-slate-950 border border-amber-500/40 rounded-xl p-3 text-amber-300 font-mono text-xs select-all outline-none"
-        ></textarea>
+      <div class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-xs text-amber-300 leading-relaxed">
+        <strong>Dynamic One-Time Pass (OTP):</strong> Zero hardcoded passwords! The workstation generates a random 10-minute challenge nonce. Sign it here using your private key to issue a single-use unlock pass.
       </div>
 
-      <!-- Client Ready Message Box -->
+      <!-- Challenge Nonce -->
       <div>
-        <div class="flex items-center justify-between mb-1.5">
-          <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-            Message for Client (Telegram / SMS):
+        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+          Workstation Challenge Nonce <span class="text-rose-400">*</span>
+        </label>
+        <input 
+          id="otpChallenge"
+          type="text" 
+          placeholder="e.g. CH-8F32A1" 
+          class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-3 text-white font-mono text-sm placeholder:text-slate-600 outline-none transition uppercase"
+        />
+        <p class="text-[11px] text-slate-500 mt-1">Copied directly from the customer's workstation screen.</p>
+      </div>
+
+      <!-- Target Machine (Optional wildcard) -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+          Target Machine ID (Optional or leave blank for any)
+        </label>
+        <input 
+          id="otpMachine"
+          type="text" 
+          placeholder="* (Wildcard / Any)" 
+          class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl px-4 py-2.5 text-white font-mono text-xs placeholder:text-slate-600 outline-none transition uppercase"
+        />
+      </div>
+
+      <!-- Duration Options -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+          Temporary Unlock Duration <span class="text-rose-400">*</span>
+        </label>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <button type="button" onclick="selectOtpDuration(1, 0, '1 Hour Test Unlock')" class="otp-dur-btn px-3 py-2.5 rounded-xl border border-rose-500 bg-rose-500/10 text-rose-300 text-xs font-bold transition text-center active:scale-95" data-h="1" data-d="0">
+            ⏱️ 1 Hour<br><span class="text-[10px] text-rose-400 font-normal">Instant Testing</span>
+          </button>
+          <button type="button" onclick="selectOtpDuration(0, 1, '1 Day Maintenance')" class="otp-dur-btn px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition text-center active:scale-95" data-h="0" data-d="1">
+            📅 1 Day<br><span class="text-[10px] text-slate-500 font-normal">Grace Period</span>
+          </button>
+          <button type="button" onclick="selectOtpDuration(0, 7, '7 Days Extension')" class="otp-dur-btn px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition text-center active:scale-95" data-h="0" data-d="7">
+            📅 7 Days<br><span class="text-[10px] text-slate-500 font-normal">Trial Extension</span>
+          </button>
+          <button type="button" onclick="selectOtpDuration(0, 30, '30 Days Developer Override')" class="otp-dur-btn px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition text-center active:scale-95" data-h="0" data-d="30">
+            📅 30 Days<br><span class="text-[10px] text-slate-500 font-normal">1 Month</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sign Action -->
+      <button 
+        type="button"
+        onclick="generateOtp()"
+        class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-bold text-sm tracking-wide shadow-lg shadow-emerald-500/20 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer"
+      >
+        <span>🔐 Sign & Issue Dynamic OTP Pass</span>
+      </button>
+
+      <!-- OTP Output Section -->
+      <div id="otpOutputSection" class="hidden space-y-3 pt-4 border-t border-slate-800">
+        <div class="flex items-center justify-between mb-1">
+          <label class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+            One-Time Dynamic Pass (OTP):
           </label>
-          <button onclick="copyMessage()" id="copyMsgBtn" class="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1">
-            💬 Copy Message
+          <button type="button" onclick="copyOtp()" id="copyOtpBtn" class="text-xs text-emerald-300 hover:text-emerald-200 font-semibold flex items-center gap-1 cursor-pointer">
+            📋 Copy OTP
           </button>
         </div>
         <textarea 
-          id="clientMessageOutput"
+          id="otpOutput"
           readonly
-          rows="5"
-          class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-slate-300 font-mono text-xs select-all outline-none"
+          rows="3"
+          class="w-full bg-slate-950 border border-emerald-500/40 rounded-xl p-3 text-emerald-300 font-mono text-xs select-all outline-none"
         ></textarea>
+        <p class="text-[11px] text-slate-400 text-center">
+          Paste this single-use token into the "Developer One-Time Dynamic Pass" input on the workstation screen.
+        </p>
       </div>
 
     </div>
 
     <!-- Footer Security Notice -->
     <div class="text-[11px] text-slate-500 text-center pt-2">
-      Protected with Asymmetric Ed25519 Cryptography. Keys generated here are uniquely tied to the specified Workstation ID.
+      Protected with Asymmetric Ed25519 Cryptography. Private key remains exclusively on your personal device.
     </div>
 
   </div>
 
   <script>
-    // Private Key bytes (PKCS8 for Ed25519)
+    // Master Ed25519 Private Key bytes (PKCS8)
     const PRIV_KEY_BASE64 = "MC4CAQAwBQYDK2VwBCIEIAlnhL4GsUw+H8aUEBKgA6Cu0UaQ7toDwMjLjdw1wMAJ";
     
+    // Tab switching
+    function switchTab(tab) {
+      const commTab = document.getElementById('tabCommercial');
+      const otpTab = document.getElementById('tabOtp');
+      const commBtn = document.getElementById('tabBtnCommercial');
+      const otpBtn = document.getElementById('tabBtnOtp');
+
+      if (tab === 'commercial') {
+        commTab.classList.remove('hidden');
+        otpTab.classList.add('hidden');
+        commBtn.className = 'py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-amber-500 text-slate-950 shadow cursor-pointer';
+        otpBtn.className = 'py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white cursor-pointer';
+      } else {
+        commTab.classList.add('hidden');
+        otpTab.classList.remove('hidden');
+        commBtn.className = 'py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white cursor-pointer';
+        otpBtn.className = 'py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-amber-500 text-slate-950 shadow cursor-pointer';
+      }
+    }
+
+    // Commercial Plan Selection
     let selectedDays = 90;
     let selectedPlanTitle = "3 Months Subscription";
 
@@ -164,6 +289,26 @@
       });
     }
 
+    // OTP Duration Selection
+    let otpSelectedHours = 1;
+    let otpSelectedDays = 0;
+    let otpSelectedTitle = "1 Hour Test Unlock";
+
+    function selectOtpDuration(hours, days, title) {
+      otpSelectedHours = hours;
+      otpSelectedDays = days;
+      otpSelectedTitle = title;
+      document.querySelectorAll('.otp-dur-btn').forEach(btn => {
+        const h = parseInt(btn.getAttribute('data-h'));
+        const d = parseInt(btn.getAttribute('data-d'));
+        if (h === hours && d === days) {
+          btn.className = 'otp-dur-btn px-3 py-2.5 rounded-xl border border-emerald-500 bg-emerald-500/10 text-emerald-300 text-xs font-bold transition text-center active:scale-95';
+        } else {
+          btn.className = 'otp-dur-btn px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition text-center active:scale-95';
+        }
+      });
+    }
+
     function base64UrlEncode(bytes) {
       let binary = '';
       const len = bytes.byteLength;
@@ -173,6 +318,7 @@
       return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
 
+    // 1. Generate Commercial License Key
     async function generateKey() {
       const machineId = document.getElementById('machineId').value.trim().toUpperCase();
       const shopName = document.getElementById('shopName').value.trim();
@@ -196,10 +342,7 @@
       const payloadBase64 = base64UrlEncode(payloadBytes);
 
       try {
-        // Convert PKCS8 base64 to ArrayBuffer
         const rawPriv = Uint8Array.from(atob(PRIV_KEY_BASE64), c => c.charCodeAt(0));
-        
-        // Import Ed25519 Private Key via Web Crypto
         const cryptoKey = await window.crypto.subtle.importKey(
           'pkcs8',
           rawPriv.buffer,
@@ -208,7 +351,6 @@
           ['sign']
         );
 
-        // Sign payloadBase64
         const dataToSign = encoder.encode(payloadBase64);
         const signatureBuffer = await window.crypto.subtle.sign(
           { name: 'Ed25519' },
@@ -223,7 +365,6 @@
 
         document.getElementById('licenseKeyOutput').value = fullLicenseKey;
 
-        // Compose client message
         const msg = `ሰላም! የ SmartBarber ማደሻ የፈቃድ ቁልፍዎ (License Key):\n` +
           `📋 Workstation ID: ${machineId}\n` +
           `📅 ቆይታ (Plan): ${selectedPlanTitle} (${selectedDays} ቀናት)\n\n` +
@@ -235,7 +376,66 @@
 
       } catch (err) {
         console.error(err);
-        alert('Cryptographic generation error: ' + err.message + '\nPlease use the node CLI generator: npm run license:generate -- --machine ' + machineId);
+        alert('Cryptographic generation error: ' + err.message);
+      }
+    }
+
+    // 2. Generate Developer Challenge OTP
+    async function generateOtp() {
+      const challenge = document.getElementById('otpChallenge').value.trim().toUpperCase();
+      const machine = document.getElementById('otpMachine').value.trim().toUpperCase() || '*';
+
+      if (!challenge) {
+        alert('Please enter the Workstation Challenge Nonce (e.g. CH-XXXXXX)');
+        return;
+      }
+
+      const payload = {
+        ch: challenge,
+        m: machine,
+        p: `Developer Verified: ${otpSelectedTitle}`,
+        ts: Math.floor(Date.now() / 1000)
+      };
+
+      if (otpSelectedHours > 0) {
+        payload.h = otpSelectedHours;
+      } else {
+        payload.d = otpSelectedDays || 1;
+      }
+
+      const payloadStr = JSON.stringify(payload);
+      const encoder = new TextEncoder();
+      const payloadBytes = encoder.encode(payloadStr);
+      const payloadBase64 = base64UrlEncode(payloadBytes);
+
+      try {
+        const rawPriv = Uint8Array.from(atob(PRIV_KEY_BASE64), c => c.charCodeAt(0));
+        const cryptoKey = await window.crypto.subtle.importKey(
+          'pkcs8',
+          rawPriv.buffer,
+          { name: 'Ed25519' },
+          false,
+          ['sign']
+        );
+
+        const dataToSign = encoder.encode(payloadBase64);
+        const signatureBuffer = await window.crypto.subtle.sign(
+          { name: 'Ed25519' },
+          cryptoKey,
+          dataToSign
+        );
+
+        const sigBytes = new Uint8Array(signatureBuffer);
+        const sigBase64 = base64UrlEncode(sigBytes);
+
+        const fullOtp = `OTP-${payloadBase64}.${sigBase64}`;
+
+        document.getElementById('otpOutput').value = fullOtp;
+        document.getElementById('otpOutputSection').classList.remove('hidden');
+
+      } catch (err) {
+        console.error(err);
+        alert('Cryptographic signing error: ' + err.message);
       }
     }
 
@@ -253,6 +453,14 @@
       const btn = document.getElementById('copyMsgBtn');
       btn.innerHTML = '✅ Copied Message!';
       setTimeout(() => btn.innerHTML = '💬 Copy Message', 2000);
+    }
+
+    function copyOtp() {
+      const el = document.getElementById('otpOutput');
+      navigator.clipboard.writeText(el.value);
+      const btn = document.getElementById('copyOtpBtn');
+      btn.innerHTML = '✅ Copied OTP!';
+      setTimeout(() => btn.innerHTML = '📋 Copy OTP', 2000);
     }
   </script>
 

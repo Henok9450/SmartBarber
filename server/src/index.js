@@ -28,7 +28,8 @@ app.use(authenticateUser);
 // Subscription Endpoints (Accessible even if expired for renewal & status check)
 app.get('/api/subscription/status', subscriptionController.getStatus);
 app.post('/api/subscription/activate', subscriptionController.activateKey);
-app.post('/api/subscription/admin-override', subscriptionController.adminOverride);
+app.get('/api/subscription/challenge', subscriptionController.getDeveloperChallenge);
+app.post('/api/subscription/challenge/verify', subscriptionController.verifyDeveloperChallenge);
 
 // Global Subscription Enforcement Guard for all operational API routes
 app.use(checkSubscription);

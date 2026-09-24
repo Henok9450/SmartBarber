@@ -27,6 +27,8 @@ function parseArgs() {
       options.hours = parseInt(args[++i], 10);
     } else if (args[i] === '--mins') {
       options.mins = parseInt(args[++i], 10);
+    } else if (args[i] === '--challenge' || args[i] === '-c') {
+      options.challenge = args[++i];
     } else if (args[i] === '--plan' || args[i] === '-p') {
       options.plan = args[++i];
     } else if (args[i] === '--shop' || args[i] === '-s') {
@@ -62,18 +64,69 @@ function generateLicense({ machineId, days, hours, mins, planName, shopName }) {
 function run() {
   const opts = parseArgs();
 
+  // Handle Dynamic One-Time Developer Challenge Pass
+  if (opts.challenge) {
+    const privKey = crypto.createPrivateKey(privKeyPem);
+    const ch = opts.challenge.trim();
+    let days = opts.days;
+    let plan = opts.plan;
+    let durDesc = '';
+
+    if (opts.hours) {
+      plan = plan || `Developer Unlock: ${opts.hours} Hour(s)`;
+      durDesc = `${opts.hours} Hour(s)`;
+    } else if (opts.months) {
+      days = opts.months * 30;
+      plan = plan || `Developer Unlock: ${opts.months} Month(s)`;
+      durDesc = `${days} Days`;
+    } else if (!days) {
+      days = 30;
+      plan = plan || 'Developer Unlock: 30 Days';
+      durDesc = '30 Days';
+    }
+
+    const payload = {
+      ch: ch,
+      m: opts.machine || '*',
+      p: plan,
+      ts: Math.floor(Date.now() / 1000)
+    };
+    if (opts.hours) payload.h = opts.hours;
+    else if (opts.mins) payload.mins = opts.mins;
+    else payload.d = days;
+
+    const pB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const sig = crypto.sign(null, Buffer.from(pB64), privKey).toString('base64url');
+    const otpPass = `OTP-${pB64}.${sig}`;
+
+    console.log(`
+============================================================
+       🔐 ONE-TIME DYNAMIC DEVELOPER PASS (OTP)
+============================================================
+Challenge Code : ${ch}
+Target Machine : ${opts.machine || 'Wildcard (*)'}
+Granted Period : ${durDesc}
+Expires In     : 10 Minutes (Single-Use Only)
+------------------------------------------------------------
+🔑 DYNAMIC OTP PASS (Paste on Workstation Screen):
+${otpPass}
+============================================================
+`);
+    return;
+  }
+
   if (!opts.machine) {
     console.log(`
 💈 SmartBarber Master License Generator
 ========================================
 Usage:
-  node scripts/generateLicense.js --machine <MACHINE_ID> [--months <1|2|3|6|12>] [--days <NUM>] [--hours <NUM>] [--shop <NAME>]
+  node scripts/generateLicense.js --machine <MACHINE_ID> [--months <1|2|3|6|12>] [--days <NUM>] [--hours <NUM>]
+  node scripts/generateLicense.js --challenge <CH-XXXXXX> [--hours <NUM>] [--months <NUM>]
 
 Examples:
+  node scripts/generateLicense.js --challenge CH-59B8C6 --hours 1
   node scripts/generateLicense.js --machine SB-WS-F1B9-E50D --hours 1
-  node scripts/generateLicense.js --machine SB-WS-F1B9-E50D --months 1
-  node scripts/generateLicense.js --machine SB-WS-F1B9-E50D --months 3 --shop "Bole Barber"
-  node scripts/generateLicense.js --machine SB-WS-F1B9-E50D --months 12 --shop "Executive Barbershop"
+  node scripts/generateLicense.js --machine SB-WS-F1B9-E50D --months 3
     `);
     process.exit(1);
   }
