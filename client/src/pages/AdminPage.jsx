@@ -1669,7 +1669,7 @@ function SubscriptionAdminTab({ lang, onUpdate }) {
     }
   };
 
-  const handleDevExtend = async (months) => {
+  const handleDevExtend = async (months, hours) => {
     if (!devPin) {
       setDevError('Enter Developer Master PIN');
       return;
@@ -1680,7 +1680,7 @@ function SubscriptionAdminTab({ lang, onUpdate }) {
       const res = await fetch('/api/subscription/admin-override', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ masterPin: devPin, months })
+        body: JSON.stringify({ masterPin: devPin, months, hours })
       });
       const data = await res.json();
       if (data.success) {
@@ -1782,10 +1782,7 @@ function SubscriptionAdminTab({ lang, onUpdate }) {
             <span className={`text-4xl font-black ${
               isExpired ? 'text-rose-400' : isExpiringSoon ? 'text-amber-400' : 'text-emerald-400'
             }`}>
-              {sub?.daysRemaining ?? 0}
-            </span>
-            <span className="text-xs text-slate-400 ml-2 font-medium">
-              {lang === 'am' ? 'ቀናት ቀሩ' : 'days left'}
+              {sub?.timeRemainingText || `${sub?.daysRemaining ?? 0} days`}
             </span>
           </div>
           <span className={`text-[11px] font-semibold inline-flex items-center gap-1 ${
@@ -1899,6 +1896,14 @@ function SubscriptionAdminTab({ lang, onUpdate }) {
             {devError && <p className="text-xs text-rose-400">{devError}</p>}
 
             <div className="flex gap-2 flex-wrap pt-1">
+              <button 
+                type="button"
+                disabled={devLoading}
+                onClick={() => handleDevExtend(0, 1)}
+                className="px-3 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-xs font-bold text-rose-300"
+              >
+                ⏱️ +1 Hr (Test)
+              </button>
               <button 
                 type="button"
                 disabled={devLoading}

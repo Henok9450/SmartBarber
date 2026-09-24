@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { 
   ShieldCheck, ShieldAlert, KeyRound, Copy, Check, Sparkles, 
   Clock, AlertTriangle, Send, X, RefreshCw, Laptop, Wrench
@@ -70,7 +70,7 @@ export default function SubscriptionModal({
     }
   };
 
-  const handleDevOverride = async (months) => {
+  const handleDevOverride = async (months, hours) => {
     if (!devPin) {
       setDevError('Please enter the Developer Master PIN.');
       return;
@@ -81,7 +81,7 @@ export default function SubscriptionModal({
       const res = await fetch('/api/subscription/admin-override', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ masterPin: devPin, months })
+        body: JSON.stringify({ masterPin: devPin, months, hours })
       });
       const data = await res.json();
       if (data.success) {
@@ -172,10 +172,7 @@ export default function SubscriptionModal({
                   <span className={`text-2xl font-black ${
                     isExpiringSoon ? 'text-amber-400' : 'text-emerald-400'
                   }`}>
-                    {subscription?.daysRemaining ?? 0}
-                  </span>
-                  <span className="text-xs text-slate-400 font-medium">
-                    {lang === 'am' ? 'ቀናት' : 'Days'}
+                    {subscription?.timeRemainingText || `${subscription?.daysRemaining ?? 0} Days`}
                   </span>
                 </div>
               </div>
@@ -316,12 +313,20 @@ export default function SubscriptionModal({
                   <p className="text-[11px] text-rose-400">{devError}</p>
                 )}
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+                  <button 
+                    type="button"
+                    disabled={devLoading}
+                    onClick={() => handleDevOverride(0, 1)}
+                    className="px-2 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-[11px] font-bold text-rose-300 transition text-center"
+                  >
+                    ⏱️ +1 Hr (Test)
+                  </button>
                   <button 
                     type="button"
                     disabled={devLoading}
                     onClick={() => handleDevOverride(1)}
-                    className="px-2.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-slate-200 transition text-center"
+                    className="px-2 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-slate-200 transition text-center"
                   >
                     {t.extend1M}
                   </button>
@@ -329,7 +334,7 @@ export default function SubscriptionModal({
                     type="button"
                     disabled={devLoading}
                     onClick={() => handleDevOverride(3)}
-                    className="px-2.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-slate-200 transition text-center"
+                    className="px-2 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-slate-200 transition text-center"
                   >
                     {t.extend3M}
                   </button>
@@ -337,7 +342,7 @@ export default function SubscriptionModal({
                     type="button"
                     disabled={devLoading}
                     onClick={() => handleDevOverride(6)}
-                    className="px-2.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-slate-200 transition text-center"
+                    className="px-2 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-bold text-slate-200 transition text-center"
                   >
                     {t.extend6M}
                   </button>
@@ -345,7 +350,7 @@ export default function SubscriptionModal({
                     type="button"
                     disabled={devLoading}
                     onClick={() => handleDevOverride(12)}
-                    className="px-2.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-[11px] font-bold text-amber-300 transition text-center"
+                    className="px-2 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-[11px] font-bold text-amber-300 transition text-center"
                   >
                     {t.extend1Y}
                   </button>

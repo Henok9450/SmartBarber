@@ -1,4 +1,4 @@
-﻿const db = require('../database/db');
+const db = require('../database/db');
 const licenseManager = require('../utils/licenseManager');
 
 const subscriptionController = {
@@ -20,7 +20,7 @@ const subscriptionController = {
       const result = licenseManager.verifyAndApplyLicenseKey(db, licenseKey);
       res.json({
         success: true,
-        message: `Subscription successfully renewed! Added ${result.daysAdded} days. Valid until ${result.formattedExpiry}.`,
+        message: `Subscription successfully renewed! Added ${result.addedText || result.daysAdded + ' days'}. Valid until ${result.formattedExpiry}.`,
         data: result
       });
     } catch (err) {
@@ -30,18 +30,19 @@ const subscriptionController = {
 
   adminOverride: (req, res) => {
     try {
-      const { masterPin, months, days, plan } = req.body;
+      const { masterPin, months, days, hours, plan } = req.body;
       let daysToAdd = days;
       if (months) {
         daysToAdd = months * 30;
         if (months === 12) daysToAdd = 365;
       }
-      if (!daysToAdd) daysToAdd = 30;
+      if (!daysToAdd && !hours) daysToAdd = 30;
 
-      const result = licenseManager.developerDirectExtend(db, masterPin, daysToAdd, plan);
+      const result = licenseManager.developerDirectExtend(db, masterPin, daysToAdd, plan, hours);
+      const addedDesc = hours ? `${hours} hour(s)` : `${result.daysAdded} day(s)`;
       res.json({
         success: true,
-        message: `Subscription extended by ${result.daysAdded} days. Valid until ${result.formattedExpiry}.`,
+        message: `Subscription extended by ${addedDesc}. Valid until ${result.formattedExpiry}.`,
         data: result
       });
     } catch (err) {

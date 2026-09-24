@@ -1,4 +1,4 @@
-﻿const crypto = require('crypto');
+const crypto = require('crypto');
 const os = require('os');
 
 // Embedded Developer Public Key (Ed25519) - Safe to be public in all installations
@@ -127,7 +127,22 @@ function getSubscriptionStatus(db) {
   const diffMs = expiry.getTime() - now.getTime();
   const isExpired = diffMs <= 0;
   const daysRemaining = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-  const isExpiringSoon = !isExpired && daysRemaining <= 7;
+  const hoursRemaining = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
+  const minutesRemaining = Math.max(0, Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60)));
+  const isExpiringSoon = !isExpired && (daysRemaining <= 7 || hoursRemaining < 24);
+
+  let timeRemainingText = `${daysRemaining} days`;
+  if (isExpired) {
+    timeRemainingText = '0 min';
+  } else if (diffMs < 60 * 60 * 1000) {
+    timeRemainingText = `${Math.max(1, Math.round(diffMs / (60 * 1000)))} mins`;
+  } else if (diffMs < 24 * 60 * 60 * 1000) {
+    timeRemainingText = `${hoursRemaining}h ${minutesRemaining}m`;
+  }
+
+  const formattedExpiry = diffMs < 48 * 60 * 60 * 1000
+    ? expiry.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : expiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
   return {
     machineId,
@@ -135,9 +150,12 @@ function getSubscriptionStatus(db) {
     isExpired,
     isExpiringSoon,
     daysRemaining,
+    hoursRemaining,
+    minutesRemaining,
+    timeRemainingText,
     plan,
     expiryDate: expiry.toISOString(),
-    formattedExpiry: expiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    formattedExpiry
   };
 }
 
@@ -207,9 +225,22 @@ function verifyAndApplyLicenseKey(db, rawKey) {
     }
   }
 
-  const daysToAdd = parseInt(payload.d || 30, 10);
-  const newExpiry = new Date(baseDate.getTime() + (daysToAdd * 24 * 60 * 60 * 1000));
-  const planName = payload.p || `${daysToAdd} Days Subscription`;
+  let msToAdd = 0;
+  let addedText = '';
+  if (payload.h) {
+    msToAdd = payload.h * 60 * 60 * 1000;
+    addedText = `${payload.h} Hours`;
+  } else if (payload.mins) {
+    msToAdd = payload.mins * 60 * 1000;
+    addedText = `${payload.mins} Minutes`;
+  } else {
+    const daysToAdd = parseInt(payload.d || 30, 10);
+    msToAdd = daysToAdd * 24 * 60 * 60 * 1000;
+    addedText = `${daysToAdd} Days`;
+  }
+
+  const newExpiry = new Date(baseDate.getTime() + msToAdd);
+  const planName = payload.p || `${addedText} Subscription`;
 
   // 5. Update settings in database
   setSetting(db, 'subscription_status', 'active');
@@ -219,20 +250,25 @@ function verifyAndApplyLicenseKey(db, rawKey) {
   setSetting(db, 'subscription_last_check', now.toISOString());
   setSetting(db, 'subscription_license_key', cleanKey);
 
+  const diffMs = newExpiry.getTime() - now.getTime();
+  const formattedExpiry = diffMs < 48 * 60 * 60 * 1000
+    ? newExpiry.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : newExpiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
   return {
     success: true,
     machineId: currentMachineId,
     plan: planName,
-    daysAdded: daysToAdd,
+    addedText,
     newExpiryDate: newExpiry.toISOString(),
-    formattedExpiry: newExpiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    formattedExpiry
   };
 }
 
 /**
  * On-site direct developer extension (protected by developer master PIN)
  */
-function developerDirectExtend(db, masterPin, daysToAdd, planLabel) {
+function developerDirectExtend(db, masterPin, daysToAdd, planLabel, hoursToAdd) {
   if (masterPin !== DEVELOPER_MASTER_PIN) {
     throw new Error('Invalid Developer Master PIN.');
   }
@@ -248,9 +284,16 @@ function developerDirectExtend(db, masterPin, daysToAdd, planLabel) {
     }
   }
 
-  const days = parseInt(daysToAdd, 10);
-  const newExpiry = new Date(baseDate.getTime() + (days * 24 * 60 * 60 * 1000));
-  const plan = planLabel || `Developer Direct: ${days} Days`;
+  let ms = 0;
+  if (hoursToAdd) {
+    ms = hoursToAdd * 60 * 60 * 1000;
+  } else {
+    const days = parseInt(daysToAdd || 30, 10);
+    ms = days * 24 * 60 * 60 * 1000;
+  }
+
+  const newExpiry = new Date(baseDate.getTime() + ms);
+  const plan = planLabel || (hoursToAdd ? `Developer Override: ${hoursToAdd} Hours` : `Developer Direct: ${daysToAdd} Days`);
 
   setSetting(db, 'subscription_status', 'active');
   setSetting(db, 'subscription_plan', plan);
@@ -259,12 +302,18 @@ function developerDirectExtend(db, masterPin, daysToAdd, planLabel) {
   setSetting(db, 'subscription_last_check', now.toISOString());
   setSetting(db, 'subscription_license_key', `ON-SITE-DEV-PIN-${now.getTime()}`);
 
+  const diffMs = newExpiry.getTime() - now.getTime();
+  const formattedExpiry = diffMs < 48 * 60 * 60 * 1000
+    ? newExpiry.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : newExpiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
   return {
     success: true,
     plan,
-    daysAdded: days,
+    daysAdded: daysToAdd || 0,
+    hoursAdded: hoursToAdd || 0,
     newExpiryDate: newExpiry.toISOString(),
-    formattedExpiry: newExpiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    formattedExpiry
   };
 }
 

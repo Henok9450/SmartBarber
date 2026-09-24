@@ -177,7 +177,7 @@ export default function App() {
                 <span>
                   {subscription?.isExpired 
                     ? (lang === 'am' ? '🔴 ፈቃዱ አልቋል' : '🔴 License Expired')
-                    : `${subscription?.daysRemaining ?? 0} ${lang === 'am' ? 'ቀናት ቀሩ' : 'days left'}`}
+                    : `${subscription?.timeRemainingText || (subscription?.daysRemaining + ' days')} ${lang === 'am' ? 'ቀረ' : 'left'}`}
                 </span>
               </button>
 
