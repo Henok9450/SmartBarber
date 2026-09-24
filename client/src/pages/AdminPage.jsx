@@ -3,7 +3,7 @@ import {
   Building2, TrendingUp, DollarSign, ShieldCheck, ShieldAlert, Lock, Unlock,
   Send, Copy, Check, QrCode, Settings, FileText, AlertCircle, AlertTriangle,
   Plus, Edit3, Trash2, Scissors, UserCheck, Calendar, User, Phone, KeyRound,
-  Upload, Image, MapPin, Store, Sparkles, CheckCircle2, RefreshCw, Laptop, Wrench
+  Upload, Image, MapPin, Store, Sparkles, CheckCircle2, RefreshCw, Laptop, Wrench, Zap
 } from 'lucide-react';
 import { translations } from '../locales/i18n';
 import { authFetch } from '../utils/auth';
@@ -1664,6 +1664,7 @@ function SubscriptionAdminTab({ lang, onUpdate }) {
   };
 
   // Developer Dynamic Challenge State (Zero hardcoded PINs)
+  const [activeTab, setActiveTab] = useState('remote'); // 'remote' or 'onsite'
   const [showDev, setShowDev] = useState(false);
   const [challengeCode, setChallengeCode] = useState('');
   const [copiedChallenge, setCopiedChallenge] = useState(false);
@@ -1682,6 +1683,10 @@ function SubscriptionAdminTab({ lang, onUpdate }) {
       console.error(err);
     }
   };
+
+  useEffect(() => {
+    fetchChallenge();
+  }, []);
 
   const copyChallenge = () => {
     if (challengeCode) {
@@ -1836,113 +1841,137 @@ function SubscriptionAdminTab({ lang, onUpdate }) {
 
       </div>
 
-      {/* Activation Section */}
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4">
-        <h3 className="text-sm font-bold text-white flex items-center gap-2">
-          <KeyRound size={16} className="text-amber-400" />
-          <span>{t.enterKey}</span>
-        </h3>
-
-        {message && (
-          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2">
-            <Sparkles size={16} className="text-emerald-400 shrink-0" />
-            <span>{message}</span>
-          </div>
-        )}
-
-        {error && (
-          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-2">
-            <AlertTriangle size={16} className="text-rose-400 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleActivate} className="space-y-3">
-          <textarea
-            rows="3"
-            value={keyInput}
-            onChange={(e) => setKeyInput(e.target.value)}
-            placeholder={t.enterKeyPlaceholder}
-            className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-2xl p-3.5 text-xs text-amber-200 font-mono outline-none"
-          />
-
-          <button
-            type="submit"
-            disabled={activating}
-            className="py-3 px-6 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-2 transition disabled:opacity-50 cursor-pointer"
-          >
-            {activating ? (
-              <>
-                <RefreshCw size={14} className="animate-spin" />
-                <span>{t.activating}</span>
-              </>
-            ) : (
-              <>
-                <Sparkles size={14} />
-                <span>{t.activateBtn}</span>
-              </>
-            )}
-          </button>
-        </form>
-      </div>
-
-      {/* Developer On-Site Override Strip */}
-      <div className="bg-slate-900/60 border border-slate-800/80 p-5 rounded-3xl space-y-3">
+      {/* Activation Navigation Tabs */}
+      <div className="grid grid-cols-2 p-1 bg-slate-950 border border-slate-800 rounded-2xl">
+        <button
+          type="button"
+          onClick={() => setActiveTab('remote')}
+          className={`py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+            activeTab === 'remote'
+              ? 'bg-amber-500 text-slate-950 shadow'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <KeyRound size={14} />
+          <span>{lang === 'am' ? 'የፈቃድ ቁልፍ (Remote Key)' : 'Remote License Key'}</span>
+        </button>
         <button
           type="button"
           onClick={() => {
-            const next = !showDev;
-            setShowDev(next);
-            if (next && !challengeCode) fetchChallenge();
+            setActiveTab('onsite');
+            if (!challengeCode) fetchChallenge();
           }}
-          className="w-full flex items-center justify-between text-xs text-slate-500 hover:text-slate-300 font-semibold"
+          className={`py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+            activeTab === 'onsite'
+              ? 'bg-amber-500 text-slate-950 shadow'
+              : 'text-slate-400 hover:text-white'
+          }`}
         >
-          <span className="flex items-center gap-1.5">
-            <Wrench size={13} className="text-slate-400" />
-            <span>{lang === 'am' ? 'የዲቨሎፐር ፈጣን ማረጋገጫ (One-Time Dynamic Pass)' : 'Developer One-Time Dynamic Pass (OTP)'}</span>
-          </span>
-          <span>{showDev ? '▲' : '▼'}</span>
+          <Zap size={14} />
+          <span>{lang === 'am' ? 'ቀጥታ ማግበሪያ (On-Site Activation)' : 'On-Site Activation (OTP)'}</span>
         </button>
+      </div>
 
-        {showDev && (
-          <div className="pt-2 space-y-3">
-            {/* Challenge Display */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800">
-              <div>
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-                  {lang === 'am' ? 'የማረጋገጫ ኮድ (Challenge)' : 'Workstation Challenge'}
-                </span>
-                <span className="font-mono font-bold text-amber-300 text-sm tracking-wider">
-                  {challengeCode || 'GENERATING...'}
-                </span>
-                <span className="text-[10px] text-slate-500 block">
-                  {lang === 'am' ? 'ለ10 ደቂቃ ብቻ የሚያገለግል (Single-use)' : 'Valid for 10 minutes (single-use)'}
-                </span>
-              </div>
+      {message && (
+        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2">
+          <Sparkles size={16} className="text-emerald-400 shrink-0" />
+          <span>{message}</span>
+        </div>
+      )}
 
-              <div className="flex items-center gap-2">
-                <button 
-                  type="button"
-                  onClick={fetchChallenge}
-                  className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition"
-                  title="New Challenge"
-                >
-                  <RefreshCw size={13} />
-                </button>
-                <button 
-                  type="button"
-                  onClick={copyChallenge}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-semibold flex items-center gap-1 transition"
-                >
-                  {copiedChallenge ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                  <span>{copiedChallenge ? 'Copied' : 'Copy'}</span>
-                </button>
-              </div>
+      {error && (
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-2">
+          <AlertTriangle size={16} className="text-rose-400 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* TAB 1: REMOTE LICENSE KEY */}
+      {activeTab === 'remote' && (
+        <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 animate-fade-in">
+          <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <KeyRound size={16} className="text-amber-400" />
+            <span>{t.enterKey}</span>
+          </h3>
+
+          <form onSubmit={handleActivate} className="space-y-3">
+            <textarea
+              rows="3"
+              value={keyInput}
+              onChange={(e) => setKeyInput(e.target.value)}
+              placeholder={t.enterKeyPlaceholder}
+              className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-2xl p-3.5 text-xs text-amber-200 font-mono outline-none"
+            />
+
+            <button
+              type="submit"
+              disabled={activating}
+              className="py-3 px-6 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-2 transition disabled:opacity-50 cursor-pointer"
+            >
+              {activating ? (
+                <>
+                  <RefreshCw size={14} className="animate-spin" />
+                  <span>{t.activating}</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={14} />
+                  <span>{t.activateBtn}</span>
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* TAB 2: ON-SITE ACTIVATION (OTP) */}
+      {activeTab === 'onsite' && (
+        <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 animate-fade-in">
+          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-xs text-amber-300 leading-relaxed">
+            <strong>{lang === 'am' ? 'የቀጥታ ማግበሪያ (On-Site Activation):' : 'On-Site Developer Unlock:'}</strong>{' '}
+            {lang === 'am'
+              ? 'ይህንን የማረጋገጫ ኮድ (Challenge Nonce) በስልክዎ የፈቃድ ማመንጫ "On-Site Activation (OTP)" ታብ ውስጥ በማስገባት ፈጣን የይለፍ ቃል (OTP) ያመንጩ።'
+              : 'Enter this 6-character Challenge Nonce on your phone generator under "On-Site Activation (OTP)" to sign an instant One-Time Pass.'}
+          </div>
+
+          {/* Challenge Display */}
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-950 border border-slate-800">
+            <div>
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
+                {lang === 'am' ? 'የማረጋገጫ ኮድ (Challenge)' : 'Workstation Challenge'}
+              </span>
+              <span className="font-mono font-black text-amber-300 text-lg sm:text-xl tracking-widest block my-0.5">
+                {challengeCode || 'GENERATING...'}
+              </span>
+              <span className="text-[10px] text-slate-500 block">
+                {lang === 'am' ? 'ለ10 ደቂቃ ብቻ የሚያገለግል (ነጠላ አጠቃቀም)' : 'Valid for 10 minutes (single-use)'}
+              </span>
             </div>
 
-            {/* OTP Pass Input */}
-            <form onSubmit={handleVerifyOtp} className="space-y-2">
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase">
+            <div className="flex items-center gap-2">
+              <button 
+                type="button"
+                onClick={fetchChallenge}
+                className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition cursor-pointer"
+                title="New Challenge"
+              >
+                <RefreshCw size={14} />
+              </button>
+              <button 
+                type="button"
+                onClick={copyChallenge}
+                className="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+              >
+                {copiedChallenge ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                <span>{copiedChallenge ? (lang === 'am' ? 'ኮፒ ሆኗል' : 'Copied') : (lang === 'am' ? 'ኮፒ አድርግ' : 'Copy Challenge')}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* OTP Pass Input */}
+          <form onSubmit={handleVerifyOtp} className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                 {lang === 'am' ? 'ከስልክዎ የተፈረመውን OTP እዚህ ያስገቡ:' : 'Enter Signed OTP Pass (from phone generator):'}
               </label>
               <div className="flex gap-2">
@@ -1951,28 +1980,28 @@ function SubscriptionAdminTab({ lang, onUpdate }) {
                   value={otpTokenInput}
                   onChange={(e) => setOtpTokenInput(e.target.value)}
                   placeholder="OTP-eyJ..."
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono outline-none focus:border-amber-500"
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-3 text-xs text-white font-mono outline-none focus:border-amber-500"
                 />
                 <button 
                   type="submit"
                   disabled={devLoading}
-                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
+                  className="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
                 >
-                  {devLoading ? <RefreshCw size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                  {devLoading ? <RefreshCw size={14} className="animate-spin" /> : <Sparkles size={14} />}
                   <span>{lang === 'am' ? 'ክፈት' : 'Unlock'}</span>
                 </button>
               </div>
-              {devError && <p className="text-xs text-rose-400">{devError}</p>}
-            </form>
+            </div>
+            {devError && <p className="text-xs text-rose-400">{devError}</p>}
+          </form>
 
-            <p className="text-[10px] text-slate-500">
-              {lang === 'am' 
-                ? 'ምንም ዓይነት ቋሚ የይለፍ ቃል የለም። በዲቨሎፐሩ ስልክ ብቻ የሚፈረም ነጠላ አጠቃቀም ፈቃድ ነው።' 
-                : 'Zero hardcoded passwords. Asymmetrically signed by Developer Private Key.'}
-            </p>
-          </div>
-        )}
-      </div>
+          <p className="text-[10px] text-slate-500 text-center">
+            {lang === 'am' 
+              ? 'ምንም ዓይነት ቋሚ የይለፍ ቃል የለም። በዲቨሎፐሩ የግል ቁልፍ (Private Key) ብቻ የሚፈረም ነጠላ አጠቃቀም ፈቃድ ነው።' 
+              : 'Zero hardcoded passwords. Asymmetrically signed by Developer Private Key.'}
+          </p>
+        </div>
+      )}
 
     </div>
   );
